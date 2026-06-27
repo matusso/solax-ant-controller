@@ -104,19 +104,26 @@ uv build
 
 The GitHub Actions workflow in `.github/workflows/ci.yml` installs from `uv.lock`, then runs tests and builds distributions on pushes and pull requests.
 
-## GitHub Packages
+## GitHub Releases
 
-The workflow publishes the package to GitHub Packages when you push a version tag or run the workflow manually:
+GitHub Packages does not provide a Python/PyPI package registry. The workflow uploads the built wheel and source distribution to a GitHub Release when you push a version tag:
 
 ```bash
 git tag v0.1.0
 git push origin v0.1.0
 ```
 
-It publishes to:
+After the workflow finishes, install the wheel from the release assets:
 
-```text
-https://pypi.pkg.github.com/<owner>
+```bash
+uv tool install \
+  https://github.com/matusso/solax-ant-controller/releases/download/v0.1.0/solax_ant_controller-0.1.0-py3-none-any.whl
 ```
 
-The upload uses the workflow `GITHUB_TOKEN`, so the workflow has `packages: write` permission. Keep `project.version` in `pyproject.toml` unique for each release because Python package registries do not allow uploading the same version twice.
+Or install directly from the tagged Git repository:
+
+```bash
+uv tool install "git+https://github.com/matusso/solax-ant-controller.git@v0.1.0"
+```
+
+For a real Python registry, publish to PyPI or a private PyPI-compatible registry such as GitLab Package Registry, AWS CodeArtifact, Azure Artifacts, or a self-hosted server.
