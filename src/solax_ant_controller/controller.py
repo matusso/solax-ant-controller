@@ -48,6 +48,7 @@ Optional env vars:
 
   MINER_FULL_PERCENT="100"
   MINER_START_SOC_PERCENT="75"
+  MINER_FULL_SOC_PERCENT="90"
   MINER_START_PERCENT="50"
   MINER_RAMP_UP_PERCENT_STEP="10"
   MINER_BATTERY_CHARGE_RESERVE_W="0"
@@ -761,6 +762,7 @@ def decide_miner_action(
 ) -> MinerDecision:
     soc = snapshot.battery_soc_percent
     start_soc = float_env("MINER_START_SOC_PERCENT", "75")
+    full_soc = float_env("MINER_FULL_SOC_PERCENT", "90")
     full_percent = float_env("MINER_FULL_PERCENT", "100")
     legacy_start_percent = os.getenv("MINER_75_PERCENT") or "50"
     start_percent = float_env(
@@ -791,7 +793,7 @@ def decide_miner_action(
             reason="battery_power_unknown",
         )
 
-    if snapshot.battery_power_w <= charge_reserve_w:
+    if snapshot.battery_power_w <= charge_reserve_w and soc < full_soc:
         return MinerDecision(
             action="pause",
             target_percent=0,
@@ -802,8 +804,12 @@ def decide_miner_action(
     available_extra_power_w = max(0.0, snapshot.battery_power_w - charge_reserve_w)
     charge_safe_target_power_w = current_power_w + available_extra_power_w
 
+    if soc >= full_soc:
+        charge_safe_target_power_w = None
+
     if (
-        power_limits.min_power_w is not None
+        charge_safe_target_power_w is not None
+        and power_limits.min_power_w is not None
         and charge_safe_target_power_w < power_limits.min_power_w
     ):
         return MinerDecision(
@@ -816,14 +822,20 @@ def decide_miner_action(
     if min_percent is not None:
         start_percent = max(start_percent, min_percent)
 
-    if last_target_percent is None or last_target_percent <= 0:
+    if soc >= full_soc:
+        target_percent = full_percent
+    elif last_target_percent is None or last_target_percent <= 0:
         target_percent = start_percent
     else:
         target_percent = min(full_percent, last_target_percent + ramp_up_step_percent)
 
     target_percent = min(target_percent, full_percent)
 
-    charge_safe_percent = power_limits.percent_for_power(charge_safe_target_power_w)
+    charge_safe_percent = (
+        None
+        if charge_safe_target_power_w is None
+        else power_limits.percent_for_power(charge_safe_target_power_w)
+    )
     if charge_safe_percent is not None:
         target_percent = min(target_percent, charge_safe_percent)
 
@@ -839,7 +851,11 @@ def decide_miner_action(
     return MinerDecision(
         action="set_percent",
         target_percent=target_percent,
-        reason="battery_above_threshold_and_charging_ramp_power",
+        reason=(
+            "battery_full_soc_ramp_power"
+            if soc >= full_soc
+            else "battery_above_threshold_and_charging_ramp_power"
+        ),
     )
 
 
