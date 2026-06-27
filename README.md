@@ -102,4 +102,21 @@ Build package distributions:
 uv build
 ```
 
-The GitHub Actions workflow in `.github/workflows/ci.yml` installs from `uv.lock`, then runs the same test and build steps on pushes and pull requests.
+The GitHub Actions workflow in `.github/workflows/ci.yml` installs from `uv.lock`, then runs tests and builds distributions on pushes and pull requests.
+
+## GitHub Packages
+
+The workflow publishes the package to GitHub Packages when you push a version tag or run the workflow manually:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+It publishes to:
+
+```text
+https://pypi.pkg.github.com/<owner>
+```
+
+The upload uses the workflow `GITHUB_TOKEN`, so the workflow has `packages: write` permission. Keep `project.version` in `pyproject.toml` unique for each release because Python package registries do not allow uploading the same version twice.
