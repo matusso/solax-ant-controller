@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "solax-ant-controller"
-version = "0.1.0"
+version = "0.3.0"
 description = "SolaX battery-aware Braiins OS miner controller"
 readme = "README.md"
 requires-python = ">=3.9"
