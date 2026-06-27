@@ -41,6 +41,7 @@ def snapshot(soc=80.0, battery_power_w=3000.0):
 def clean_miner_env(monkeypatch):
     for name in (
         "MINER_START_SOC_PERCENT",
+        "MINER_FULL_SOC_PERCENT",
         "MINER_FULL_PERCENT",
         "MINER_START_PERCENT",
         "MINER_75_PERCENT",
@@ -74,6 +75,44 @@ def test_decision_pauses_when_battery_is_not_charging_enough(monkeypatch):
 
     assert decision.action == "pause"
     assert decision.reason == "battery_not_charging_enough_pause_mining"
+
+
+def test_decision_ramps_to_full_when_battery_is_above_full_soc_without_charging():
+    limits = main.MinerPowerLimits(
+        min_power_w=2414,
+        max_power_w=6435,
+        rated_power_w=3500,
+    )
+
+    decision = main.decide_miner_action(
+        snapshot=snapshot(soc=99, battery_power_w=0),
+        last_target_percent=90,
+        miner_power_w=2624,
+        power_limits=limits,
+    )
+
+    assert decision.action == "set_percent"
+    assert decision.target_percent == 100
+    assert decision.reason == "battery_full_soc_ramp_power"
+
+
+def test_decision_starts_at_full_when_battery_is_above_full_soc_from_pause():
+    limits = main.MinerPowerLimits(
+        min_power_w=2414,
+        max_power_w=6435,
+        rated_power_w=3500,
+    )
+
+    decision = main.decide_miner_action(
+        snapshot=snapshot(soc=99, battery_power_w=0),
+        last_target_percent=None,
+        miner_power_w=0,
+        power_limits=limits,
+    )
+
+    assert decision.action == "set_percent"
+    assert decision.target_percent == 100
+    assert decision.reason == "battery_full_soc_ramp_power"
 
 
 def test_decision_starts_at_miner_minimum_when_limits_are_known():

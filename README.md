@@ -8,8 +8,9 @@ The controller polls SolaXCloud, reads battery state of charge and battery charg
 
 - Polls SolaXCloud every 5 minutes by default.
 - Pauses mining when battery SOC is below `75%`.
-- Keeps mining paused when SOC is at least `75%` but the battery is not still charging.
+- Keeps mining paused when SOC is between `75%` and `90%` but the battery is not still charging.
 - Resumes mining when SOC is at least `75%` and the battery is charging.
+- Allows full miner power when SOC is at least `90%`, even if the battery has stopped charging because it is nearly full.
 - Ramps miner power step by step instead of jumping straight to full power.
 - Avoids Braiins power-target range errors by learning or using configured min/max watt limits.
 - Uses Braiins `pause`, not `stop`, for battery protection so BOSminer can resume cleanly.
@@ -71,6 +72,7 @@ Useful optional environment variables:
 | `MINER_REFERENCE` | `1` | Braiins relative target reference. |
 | `MINER_FULL_PERCENT` | `100` | Maximum target percent the ramp may reach. |
 | `MINER_START_SOC_PERCENT` | `75` | Battery SOC needed before mining can resume. |
+| `MINER_FULL_SOC_PERCENT` | `90` | Battery SOC where the miner may ramp toward full power even without positive battery charge. |
 | `MINER_START_PERCENT` | `50` | Initial target percent when mining resumes. |
 | `MINER_RAMP_UP_PERCENT_STEP` | `10` | Percent added each successful loop while still charging. |
 | `MINER_BATTERY_CHARGE_RESERVE_W` | `0` | Charging watts to preserve before allocating surplus to the miner. |
