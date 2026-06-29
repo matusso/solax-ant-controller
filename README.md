@@ -47,6 +47,43 @@ export MINER_DRY_RUN="true"
 uv run solax-ant-controller
 ```
 
+## Run as a systemd service
+
+The repository includes a production-oriented unit file and environment template:
+
+- `deploy/systemd/solax-ant-controller.service`
+- `deploy/systemd/solax-ant-controller.env.example`
+
+Example install on the target Linux host:
+
+```bash
+sudo useradd --system --home /opt/solax-ant-controller --shell /usr/sbin/nologin solax-ant-controller
+sudo mkdir -p /opt/solax-ant-controller /var/log/solax-ant-controller
+sudo chown solax-ant-controller:solax-ant-controller /opt/solax-ant-controller /var/log/solax-ant-controller
+
+sudo rsync -a --exclude .venv ./ /opt/solax-ant-controller/
+sudo chown -R solax-ant-controller:solax-ant-controller /opt/solax-ant-controller
+cd /opt/solax-ant-controller
+sudo -u solax-ant-controller uv sync --frozen --no-dev
+
+sudo cp deploy/systemd/solax-ant-controller.env.example /etc/solax-ant-controller.env
+sudo editor /etc/solax-ant-controller.env
+sudo chmod 600 /etc/solax-ant-controller.env
+sudo chown root:root /etc/solax-ant-controller.env
+
+sudo cp deploy/systemd/solax-ant-controller.service /etc/systemd/system/solax-ant-controller.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now solax-ant-controller.service
+```
+
+Useful service commands:
+
+```bash
+sudo systemctl status solax-ant-controller.service
+sudo journalctl -u solax-ant-controller.service -f
+sudo systemctl restart solax-ant-controller.service
+```
+
 ## Configuration
 
 Required environment variables:

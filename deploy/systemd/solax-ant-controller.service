@@ -1,0 +1,30 @@
+[Unit]
+Description=SolaX battery-aware Braiins OS miner controller
+Documentation=https://github.com/matusso/solax-ant-controller
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=solax-ant-controller
+Group=solax-ant-controller
+WorkingDirectory=/opt/solax-ant-controller
+EnvironmentFile=/etc/solax-ant-controller.env
+Environment=PYTHONUNBUFFERED=1
+Environment=PATH=/opt/solax-ant-controller/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/usr/bin/env uv run --frozen --no-sync solax-ant-controller
+Restart=on-failure
+RestartSec=30
+TimeoutStopSec=30
+KillSignal=SIGTERM
+
+# Basic hardening. The controller needs network access and write access to its
+# configured log directory, but not broad host write access.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/log/solax-ant-controller
+
+[Install]
+WantedBy=multi-user.target
